@@ -36,7 +36,6 @@ var app = connect()
   .use(... any middleware ...)
 ```
 
-
 ## License
 Copyright &copy;2013 Rafal Lindemann
 Licensed under the MIT license.
