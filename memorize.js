@@ -11,6 +11,7 @@ module.exports = function(options) {
         /* Function(req) or regular expression to match the url */
         match: false,
         memorize: true,
+        /* Function(url, req) or boolean */
         recall: false,
         storageDir: 'offline',
         /* Function(url, req) or regular expression to normalize the url. 
@@ -51,12 +52,18 @@ module.exports = function(options) {
 
         var storageFile = options.storageDir + '/' + urlPath;
 
-        if (options.recall) {
-            // try to serve offline file
-            if (fs.existsSync(storageFile)) {
-                fs.createReadStream(storageFile).pipe(res);
-                return;
-            }
+        function serve() {
+          // try to serve offline file
+          if (fs.existsSync(storageFile)) {
+            fs.createReadStream(storageFile).pipe(res);
+            if (options.verbose) console.log('served from local file: ', storageFile);
+            return true;
+          }
+        }
+
+        if ((typeof options.recall === 'function' && options.recall(urlPath, req))
+            || options.recall === true) {
+          if(serve()) { return; }
         }
 
         if (options.memorize) {
@@ -95,6 +102,7 @@ module.exports = function(options) {
                     fs.closeSync(file);
                     try {
                         fs.renameSync(partFile, storageFile);
+                      if (options.verbose) console.log('Stored response in', storageFile);
                     } catch (e) {
                         console.log('Can\'t rename ', partFile, ' to ', storageFile);
                     }
