@@ -23,7 +23,6 @@ module.exports = function(options) {
     if (!options.storageDir) throw 'options.storageDir is not defined!';
 
     return function(req, res, next) {
-        // console.log(req);
         if ('GET' !== req.method/* && 'HEAD' != req.method*/) return next();
 
         if (typeof options.match === 'function') {
@@ -52,9 +51,9 @@ module.exports = function(options) {
 
         var storageFile = options.storageDir + '/' + urlPath;
 
-        function serve() {
+        function maybeServe() {
           // try to serve offline file
-          if (fs.existsSync(storageFile)) {
+          if (fs.existsSync(storageFile) && fs.statSync(storageFile).isFile()) {
             fs.createReadStream(storageFile).pipe(res);
             if (options.verbose) console.log('served from local file: ', storageFile);
             return true;
@@ -63,7 +62,7 @@ module.exports = function(options) {
 
         if ((typeof options.recall === 'function' && options.recall(urlPath, req))
             || options.recall === true) {
-          if(serve()) { return; }
+          if (maybeServe()) { return; }
         }
 
         if (options.memorize) {
@@ -72,7 +71,8 @@ module.exports = function(options) {
                 _end = res.end,
                 _writeHead = res.writeHead,
                 file,
-                partFile = storageFile + '.part';
+                // get a unique filename so 2 requests don't try to overwrite each other
+                partFile = storageFile + '.part' + Math.round(Math.random() * 10000000 + 10000000);
 
             var memorize = function(data, enc) {
                 if (file === false || !data) return; // storing disabled, or no data
