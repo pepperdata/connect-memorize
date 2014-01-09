@@ -51,18 +51,14 @@ module.exports = function(options) {
 
         var storageFile = options.storageDir + '/' + urlPath;
 
-        function maybeServe() {
+        if ((typeof options.recall === 'function' && options.recall(urlPath, req))
+            || options.recall === true) {
           // try to serve offline file
           if (fs.existsSync(storageFile) && fs.statSync(storageFile).isFile()) {
             fs.createReadStream(storageFile).pipe(res);
             if (options.verbose) console.log('served from local file: ', storageFile);
-            return true;
+            return;
           }
-        }
-
-        if ((typeof options.recall === 'function' && options.recall(urlPath, req))
-            || options.recall === true) {
-          if (maybeServe()) { return; }
         }
 
         if (options.memorize) {
